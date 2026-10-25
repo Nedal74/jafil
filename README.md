@@ -187,9 +187,13 @@ NODE_ENV=production npm start -- -p 3000   # behind Nginx/Caddy with HTTPS
 - Production cookies are `Secure`, `HttpOnly`, `SameSite=Lax`, `__Host-` prefixed.
 - Run `npm run db:seed` once; create the first admin with `npm run admin:create`.
 
-**B. Serverless (e.g. Vercel) + managed Postgres** — possible, but first implement
-an S3-compatible `StorageAdapter` in `src/lib/storage/index.ts` (local disk is
-ephemeral on serverless). Use a pooled `DATABASE_URL` (e.g. PgBouncer/Neon pooler).
+**B. Vercel + Supabase (recommended, step-by-step Arabic guide in `DEPLOY-VERCEL-AR.md`)**
+Set `DATABASE_URL` (transaction pooler + `?pgbouncer=true&connection_limit=1`),
+`DIRECT_URL` (session pooler — `npm run build` applies migrations and seeds through
+it), `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` (media goes to a public
+Supabase Storage bucket, created on first upload), `NEXT_PUBLIC_SITE_URL` and
+`SETUP_KEY`. Then open `/admin` to create the first Super Admin at `/admin/setup`
+(works only while no account exists). Upload size is capped at 4MB on Vercel.
 
 Set the build root to `aljafil/`. After deploying: submit `/sitemap.xml` in Search
 Console, keep **SEO → indexing** disabled on staging environments.
@@ -312,7 +316,6 @@ Search Console/GA4 API calls, webhook delivery, production HTTPS cookie behaviou
 ## Known limitations
 
 - Dashboard UI is Arabic only (public site is fully bilingual).
-- Media storage adapter is local disk only; serverless hosting needs an S3 adapter.
 - No image resizing on upload (Next.js image optimisation resizes on delivery).
 - Article body is safe plain text with simple `##` / `-` formatting, not WYSIWYG.
 - Notification adapter supports webhooks only (no email/SMS yet).

@@ -9,7 +9,7 @@ export function middleware(req: NextRequest) {
   if (pathname.startsWith("/admin")) {
     // Cheap presence check only; every admin page/action re-validates the session in the database.
     const hasSession = SESSION_COOKIES.some((c) => req.cookies.has(c));
-    if (!hasSession && pathname !== "/admin/login") {
+    if (!hasSession && pathname !== "/admin/login" && pathname !== "/admin/setup") {
       const url = req.nextUrl.clone();
       url.pathname = "/admin/login";
       url.search = "";

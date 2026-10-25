@@ -2,12 +2,15 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/db";
 import { LoginForm } from "./LoginForm";
 
 export const metadata = { title: "تسجيل الدخول" };
 
 export default async function LoginPage() {
   if (await getSessionUser()) redirect("/admin");
+  // Fresh deployment with no accounts yet → first-admin setup.
+  if ((await prisma.user.count()) === 0) redirect("/admin/setup");
   return (
     <main className="flex min-h-dvh items-center justify-center bg-navy p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl">

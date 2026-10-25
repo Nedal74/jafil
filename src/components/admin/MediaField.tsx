@@ -8,11 +8,18 @@ import { useFieldError } from "./forms";
 type MediaItem = { id: string; url: string; mimeType: string; originalName: string };
 
 export async function uploadFiles(files: FileList | File[]): Promise<{ items: MediaItem[]; error?: string }> {
-  const fd = new FormData();
-  Array.from(files).forEach((f) => fd.append("file", f));
-  const res = await fetch("/api/admin/media", { method: "POST", body: fd });
-  const data = await res.json().catch(() => ({}));
-  return { items: data.items ?? data.created ?? [], error: res.ok ? undefined : data.error ?? "تعذر الرفع" };
+  // One request per file keeps every body under hosting limits (4.5MB on Vercel).
+  const items: MediaItem[] = [];
+  for (const file of Array.from(files)) {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/admin/media", { method: "POST", body: fd });
+    if (res.status === 413) return { items, error: `${file.name}: الملف أكبر من الحد المسموح (4MB)` };
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { items, error: `${file.name}: ${data.error ?? "تعذر الرفع"}` };
+    items.push(...(data.items ?? []));
+  }
+  return { items };
 }
 
 /** Media library dialog: browse uploaded files or upload new ones. */
