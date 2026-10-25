@@ -1,0 +1,589 @@
+// Masaken Aljafil Real Estate — database schema.
+// All business data (projects, units, articles, settings) is created through
+// the admin dashboard. Nothing here ships with fabricated listings.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Identity, access and auditing
+// ---------------------------------------------------------------------------
+
+enum Role {
+  SUPER_ADMIN
+  CONTENT_EDITOR
+  SALES_AGENT
+  FINANCING_MANAGER
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         Role
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions             Session[]
+  auditLogs            AuditLog[]
+  assignedLeads        Lead[]                 @relation("LeadAssignee")
+  leadNotes            LeadNote[]
+  leadActivities       LeadActivity[]
+  assignedApplications FinancingApplication[] @relation("FinancingAssignee")
+  financingNotes       FinancingNote[]
+  media                Media[]
+}
+
+model Session {
+  id         String   @id @default(cuid())
+  // SHA-256 of the random token held in the cookie; the raw token is never stored.
+  tokenHash  String   @unique
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  userAgent  String?
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  summary   String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model RateLimit {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+}
+
+// ---------------------------------------------------------------------------
+// Media
+// ---------------------------------------------------------------------------
+
+model Media {
+  id           String   @id @default(cuid())
+  storageKey   String   @unique
+  url          String
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  originalName String
+  altAr        String?
+  altEn        String?
+  createdById  String?
+  createdBy    User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+
+  projectCovers   Project[]      @relation("ProjectCover")
+  projectOgImages Project[]      @relation("ProjectOg")
+  projectImages   ProjectImage[]
+  unitFloorPlans  Unit[]         @relation("UnitFloorPlan")
+  unitImages      UnitImage[]
+  articleCovers   Article[]      @relation("ArticleCover")
+}
+
+// ---------------------------------------------------------------------------
+// Projects and inventory
+// ---------------------------------------------------------------------------
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ConstructionStatus {
+  UPCOMING
+  UNDER_CONSTRUCTION
+  COMPLETED
+}
+
+enum SalesStatus {
+  COMING_SOON
+  AVAILABLE
+  SOLD_OUT
+}
+
+// Which units form the denominator when computing sales percentages.
+enum InventoryBasis {
+  LISTED_UNITS // every unit except UNPUBLISHED
+  MANUAL_TOTAL // Project.manualInventoryTotal (e.g. total phase inventory)
+}
+
+// Where the public price/area/bedroom ranges come from.
+enum RangeMode {
+  AUTO_FROM_UNITS
+  MANUAL
+}
+
+model PropertyType {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  nameAr    String
+  nameEn    String
+  order     Int       @default(0)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  projects  Project[]
+  units     Unit[]
+}
+
+model Project {
+  id     String        @id @default(cuid())
+  status PublishStatus @default(DRAFT)
+  slugAr String        @unique
+  slugEn String        @unique
+
+  nameAr        String
+  nameEn        String
+  summaryAr     String?
+  summaryEn     String?
+  descriptionAr String?
+  descriptionEn String?
+
+  cityAr         String?
+  cityEn         String?
+  neighborhoodAr String?
+  neighborhoodEn String?
+  addressAr      String?
+  addressEn      String?
+  latitude       Float?
+  longitude      Float?
+  mapUrl         String?
+
+  propertyTypeId     String?
+  propertyType       PropertyType?      @relation(fields: [propertyTypeId], references: [id], onDelete: SetNull)
+  constructionStatus ConstructionStatus @default(UPCOMING)
+  salesStatus        SalesStatus        @default(COMING_SOON)
+
+  featured     Boolean @default(false)
+  showOnHome   Boolean @default(false)
+  displayOrder Int     @default(0)
+
+  coverImageId String?
+  coverImage   Media?  @relation("ProjectCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  videoUrl     String?
+
+  rangeMode   RangeMode @default(AUTO_FROM_UNITS)
+  priceMin    Int?
+  priceMax    Int?
+  areaMin     Float?
+  areaMax     Float?
+  bedroomsMin Int?
+  bedroomsMax Int?
+
+  inventoryBasis       InventoryBasis @default(LISTED_UNITS)
+  manualInventoryTotal Int?
+
+  deliveryAr    String?
+  deliveryEn    String?
+  salesPhone    String?
+  salesWhatsapp String?
+
+  seoTitleAr       String?
+  seoTitleEn       String?
+  seoDescriptionAr String?
+  seoDescriptionEn String?
+  canonicalUrl     String?
+  ogImageId        String?
+  ogImage          Media?  @relation("ProjectOg", fields: [ogImageId], references: [id], onDelete: SetNull)
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  images   ProjectImage[]
+  features ProjectFeature[]
+  nearby   NearbyPlace[]
+  units    Unit[]
+  leads    Lead[]
+
+  @@index([status, displayOrder])
+}
+
+model ProjectImage {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  order     Int     @default(0)
+  captionAr String?
+  captionEn String?
+
+  @@index([projectId, order])
+}
+
+enum FeatureKind {
+  AMENITY
+  FACILITY
+  GUARANTEE
+}
+
+model ProjectFeature {
+  id        String      @id @default(cuid())
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  kind      FeatureKind
+  labelAr   String
+  labelEn   String
+  // e.g. guarantee duration ("10 سنوات" / "10 years") or provider.
+  detailAr  String?
+  detailEn  String?
+  order     Int         @default(0)
+
+  @@index([projectId, kind])
+}
+
+model NearbyPlace {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  nameAr    String
+  nameEn    String
+  minutes   Int?
+  order     Int     @default(0)
+}
+
+enum UnitStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  UNPUBLISHED
+}
+
+model Unit {
+  id             String        @id @default(cuid())
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  reference      String
+  propertyTypeId String?
+  propertyType   PropertyType? @relation(fields: [propertyTypeId], references: [id], onDelete: SetNull)
+  area           Float?
+  price          Int?
+  bedrooms       Int?
+  bathrooms      Int?
+  floorAr        String?
+  floorEn        String?
+  featuresAr     String?
+  featuresEn     String?
+  status         UnitStatus    @default(AVAILABLE)
+  floorPlanId    String?
+  floorPlan      Media?        @relation("UnitFloorPlan", fields: [floorPlanId], references: [id], onDelete: SetNull)
+  order          Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  images UnitImage[]
+  leads  Lead[]
+
+  @@unique([projectId, reference])
+  @@index([projectId, status])
+}
+
+model UnitImage {
+  id      String @id @default(cuid())
+  unitId  String
+  unit    Unit   @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  mediaId String
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  order   Int    @default(0)
+}
+
+// ---------------------------------------------------------------------------
+// Editorial content
+// ---------------------------------------------------------------------------
+
+model Article {
+  id               String        @id @default(cuid())
+  status           PublishStatus @default(DRAFT)
+  slugAr           String        @unique
+  slugEn           String        @unique
+  titleAr          String
+  titleEn          String
+  excerptAr        String?
+  excerptEn        String?
+  bodyAr           String?
+  bodyEn           String?
+  coverImageId     String?
+  coverImage       Media?        @relation("ArticleCover", fields: [coverImageId], references: [id], onDelete: SetNull)
+  seoTitleAr       String?
+  seoTitleEn       String?
+  seoDescriptionAr String?
+  seoDescriptionEn String?
+  publishedAt      DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([status, publishedAt])
+}
+
+model HomeSection {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  enabled    Boolean  @default(true)
+  order      Int      @default(0)
+  titleAr    String?
+  titleEn    String?
+  subtitleAr String?
+  subtitleEn String?
+  updatedAt  DateTime @updatedAt
+}
+
+model CompanyStat {
+  id      String  @id @default(cuid())
+  labelAr String
+  labelEn String
+  value   Int
+  prefix  String?
+  suffix  String?
+  order   Int     @default(0)
+  enabled Boolean @default(true)
+}
+
+// Company advantages shown on the homepage (distinct from per-project features).
+model Advantage {
+  id            String  @id @default(cuid())
+  titleAr       String
+  titleEn       String
+  descriptionAr String?
+  descriptionEn String?
+  icon          String  @default("check")
+  order         Int     @default(0)
+  enabled       Boolean @default(true)
+}
+
+// Typed JSON blobs validated with zod in src/lib/settings.ts.
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model Redirect {
+  id         String   @id @default(cuid())
+  fromPath   String   @unique
+  toPath     String
+  statusCode Int      @default(308)
+  createdAt  DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// CRM
+// ---------------------------------------------------------------------------
+
+enum LeadSource {
+  PROJECT_INQUIRY
+  CONTACT_FORM
+  AI_ASSISTANT
+  FINANCING
+  HOME_SEARCH
+  MANUAL
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  VISIT_SCHEDULED
+  NEGOTIATION
+  WON
+  LOST
+}
+
+model Lead {
+  id                    String     @id @default(cuid())
+  name                  String
+  phone                 String
+  // Canonical 9665XXXXXXXX form used for duplicate detection.
+  phoneNormalized       String
+  email                 String?
+  propertyTypeKey       String?
+  budgetMin             Int?
+  budgetMax             Int?
+  preferredLocation     String?
+  bedrooms              Int?
+  message               String?
+  projectId             String?
+  project               Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  unitId                String?
+  unit                  Unit?      @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  source                LeadSource
+  landingPage           String?
+  locale                String     @default("ar")
+  consent               Boolean
+  consentAt             DateTime?
+  assignedToId          String?
+  assignedTo            User?      @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  status                LeadStatus @default(NEW)
+  // Set when another lead shares the phone/email; never merged automatically.
+  possibleDuplicateOfId String?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  notes      LeadNote[]
+  activities LeadActivity[]
+  chats      ChatConversation[]
+
+  @@index([phoneNormalized])
+  @@index([email])
+  @@index([status, createdAt])
+  @@index([assignedToId])
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  type      String
+  fromValue String?
+  toValue   String?
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+}
+
+// Anonymous, measurable WhatsApp CTA clicks (no personal data).
+model CtaClick {
+  id        String   @id @default(cuid())
+  channel   String
+  projectId String?
+  page      String?
+  createdAt DateTime @default(now())
+
+  @@index([channel, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Financing applications — stored apart from leads, never exposed publicly.
+// ---------------------------------------------------------------------------
+
+enum FinancingOperation {
+  PURCHASE
+  SELF_CONSTRUCTION
+  REFINANCE
+}
+
+enum EmployerSector {
+  GOVERNMENT
+  MILITARY
+  PRIVATE
+  RETIRED
+  OTHER
+}
+
+enum FinancingStatus {
+  NEW
+  IN_REVIEW
+  CONTACTED
+  DOCUMENTS_REQUESTED
+  REFERRED_TO_BANK
+  CLOSED
+}
+
+model FinancingApplication {
+  id                 String             @id @default(cuid())
+  reference          String             @unique
+  operation          FinancingOperation
+  fullName           String
+  phone              String
+  phoneNormalized    String
+  monthlySalary      Int
+  employerSector     EmployerSector
+  bank               String
+  monthlyObligations Int
+  hasRealEstateLoan  Boolean
+  age                Int
+  locale             String             @default("ar")
+  consent            Boolean
+  consentAt          DateTime
+  status             FinancingStatus    @default(NEW)
+  assignedToId       String?
+  assignedTo         User?              @relation("FinancingAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  notes FinancingNote[]
+
+  @@index([status, createdAt])
+}
+
+model FinancingNote {
+  id            String               @id @default(cuid())
+  applicationId String
+  application   FinancingApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  authorId      String?
+  author        User?                @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body          String
+  createdAt     DateTime             @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// AI property assistant
+// ---------------------------------------------------------------------------
+
+model ChatConversation {
+  id               String        @id @default(cuid())
+  // Random id held by the visitor's browser; not linked to identity.
+  visitorKey       String
+  locale           String
+  criteria         Json?
+  handoffRequested Boolean       @default(false)
+  leadId           String?
+  lead             Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  messages         ChatMessage[]
+
+  @@index([visitorKey])
+  @@index([createdAt])
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  // Project/unit ids the reply was grounded in.
+  references     Json?
+  usedModel      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId, createdAt])
+}
