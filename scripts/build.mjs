@@ -6,6 +6,7 @@
  *      migrations), so a fresh Supabase database gets its tables automatically
  *   3. next build
  */
+import { resolveDatabaseUrl, resolveDirectUrl } from "../src/lib/db-url.mjs";
 import { spawnCmd } from "./spawn-util.mjs";
 
 function run(cmd, args, env = {}) {
@@ -18,13 +19,16 @@ function run(cmd, args, env = {}) {
 async function main() {
   await run("npx", ["prisma", "generate"]);
 
-  const direct = process.env.DIRECT_URL;
+  // Accept the variables injected by Vercel's Supabase/Postgres integration too.
+  const pooled = resolveDatabaseUrl();
+  if (pooled) process.env.DATABASE_URL = pooled;
+  const direct = resolveDirectUrl();
   if (direct) {
     console.log("▶ Applying database migrations (DIRECT_URL) …");
     await run("npx", ["prisma", "migrate", "deploy"], { DATABASE_URL: direct });
     await run("npx", ["tsx", "prisma/seed.ts"], { DATABASE_URL: direct });
   } else if (process.env.VERCEL) {
-    console.warn("⚠ DIRECT_URL is not set: database migrations were skipped. See DEPLOY-VERCEL-AR.md.");
+    console.warn("⚠ No database configured (DIRECT_URL / POSTGRES_URL_NON_POOLING): migrations were skipped. See DEPLOY-VERCEL-AR.md.");
   }
 
   await run("npx", ["next", "build"]);

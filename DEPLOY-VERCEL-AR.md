@@ -2,6 +2,16 @@
 
 النتيجة: موقع على الإنترنت، قاعدة بيانات وصور على Supabase، والجداول تُنشأ تلقائياً مع كل نشر.
 
+## الطريقة الأسهل (بدون نسخ أي قيم)
+1. في Vercel افتح مشروعك → تبويب **Storage** → **Create Database** → اختر **Supabase** → **Continue**
+   → اختر المنطقة (مثلاً Frankfurt) → **Create** → ثم **Connect Project** واختر المشروع (Production و Preview).
+2. Vercel يضيف تلقائياً كل المتغيرات المطلوبة (`POSTGRES_PRISMA_URL`، `POSTGRES_URL_NON_POOLING`،
+   `SUPABASE_URL`، `SUPABASE_SERVICE_ROLE_KEY`…) والموقع يقرأها مباشرة.
+3. أضف فقط `SETUP_KEY` و`NEXT_PUBLIC_SITE_URL` (انظر الجدول أدناه) ثم **Redeploy**.
+4. افتح `/admin` وأنشئ حساب المدير.
+
+## الطريقة اليدوية (مشروع Supabase موجود مسبقاً)
+
 ---
 
 ## 1) Supabase — أنشئ المشروع وانسخ 4 قيم
@@ -45,7 +55,6 @@ DIRECT_URL=postgresql://postgres.abcd:PASS@aws-0-eu-central-1.pooler.supabase.co
 | `SUPABASE_SERVICE_ROLE_KEY` | `sb_secret_...` |
 | `NEXT_PUBLIC_SITE_URL` | رابط موقعك، مثل `https://aljafil.vercel.app` (بدون `/` في الآخر) |
 | `SETUP_KEY` | أي كلمة سرية تختارها (لإنشاء أول حساب مدير) |
-| `TZ` | `Asia/Riyadh` |
 
 5. **Deploy**. أثناء البناء ستظهر في السجل: `Applying database migrations` ثم `Seeded …` = الجداول أُنشئت.
 

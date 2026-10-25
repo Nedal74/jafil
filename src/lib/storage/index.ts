@@ -169,8 +169,13 @@ export class SupabaseStorage implements StorageAdapter {
   }
 }
 
+function supabaseUrl(): string | undefined {
+  // SUPABASE_URL is what Vercel's Supabase integration injects.
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+}
+
 export function supabaseStorageConfigured(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(supabaseUrl() && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 let adapter: StorageAdapter | null = null;
@@ -178,7 +183,7 @@ export function storage(): StorageAdapter {
   if (!adapter) {
     adapter = supabaseStorageConfigured()
       ? new SupabaseStorage(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          supabaseUrl()!,
           process.env.SUPABASE_SERVICE_ROLE_KEY!,
           process.env.SUPABASE_MEDIA_BUCKET || "media",
         )

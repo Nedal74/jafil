@@ -15,7 +15,8 @@ const securityHeaders = [
 // Media uploaded to Supabase Storage is served from the project's public bucket URL.
 const supabaseHost = (() => {
   try {
-    return process.env.NEXT_PUBLIC_SUPABASE_URL ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname : null;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+    return url ? new URL(url).hostname : null;
   } catch {
     return null;
   }

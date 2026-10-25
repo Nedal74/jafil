@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { spawnCmd } from "./spawn-util.mjs";
 
 function hasDatabaseUrl() {
-  if (process.env.DATABASE_URL) return true;
+  if (process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL) return true;
   if (!existsSync(".env")) return false;
   return /^\s*DATABASE_URL\s*=\s*\S+/m.test(readFileSync(".env", "utf8"));
 }
