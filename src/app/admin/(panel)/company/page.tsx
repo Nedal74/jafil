@@ -21,6 +21,8 @@ export default async function CompanyPage() {
             <TextField name="nameEn" label="اسم الشركة (إنجليزي)" defaultValue={c.nameEn} dir="ltr" />
             <TextArea name="introAr" label="نبذة الصفحة الرئيسية (عربي)" defaultValue={c.introAr} rows={4} />
             <TextArea name="introEn" label="نبذة الصفحة الرئيسية (إنجليزي)" defaultValue={c.introEn} rows={4} dir="ltr" />
+            <MediaUrlField name="introImageUrl" label="صورة قسم «عن مساكن الجافل» في الرئيسية" defaultValue={c.introImageUrl} />
+            <MediaUrlField name="aboutImageUrl" label="صورة صفحة «من نحن» (اختياري — تُستخدم صورة الرئيسية إن تُركت)" defaultValue={c.aboutImageUrl} />
             <TextArea name="aboutAr" label="من نحن — النص الكامل (عربي)" defaultValue={c.aboutAr} rows={8} />
             <TextArea name="aboutEn" label="من نحن — النص الكامل (إنجليزي)" defaultValue={c.aboutEn} rows={8} dir="ltr" />
             <TextArea name="visionAr" label="الرؤية (عربي)" defaultValue={c.visionAr} rows={3} />

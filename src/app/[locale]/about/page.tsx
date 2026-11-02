@@ -47,9 +47,15 @@ export default async function AboutPage({ params }: Props) {
             <p className="mt-4 text-muted">{t.footer.about}</p>
           )}
         </div>
-        <div aria-hidden className="relative hidden aspect-square rounded-2xl bg-beige lg:block">
-          <Image src="/brand/logo-navy.png" alt="" fill sizes="320px" className="object-contain p-16" />
-        </div>
+        {company.aboutImageUrl || company.introImageUrl ? (
+          <div className="relative aspect-square overflow-hidden rounded-2xl bg-beige">
+            <Image src={(company.aboutImageUrl || company.introImageUrl)!} alt={pick(company, "name", locale)} fill sizes="(min-width: 1024px) 320px, 100vw" className="object-cover" />
+          </div>
+        ) : (
+          <div aria-hidden className="relative hidden aspect-square rounded-2xl bg-beige lg:block">
+            <Image src="/brand/logo-navy.png" alt="" fill sizes="320px" className="object-contain p-16" />
+          </div>
+        )}
       </section>
 
       {(vision || mission) && (

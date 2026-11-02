@@ -130,9 +130,15 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 <p className="mt-5 whitespace-pre-line leading-8 text-muted">{intro}</p>
                 <Link href={`/${locale}/about`} className="btn-outline mt-7">{t.common.readMore}</Link>
               </div>
-              <div aria-hidden className="relative hidden aspect-[5/4] overflow-hidden rounded-2xl bg-beige lg:block">
-                <Image src="/brand/logo-navy.png" alt="" fill sizes="40vw" className="object-contain p-24 opacity-90" />
-              </div>
+              {company.introImageUrl ? (
+                <div className="relative aspect-[5/4] overflow-hidden rounded-2xl bg-beige">
+                  <Image src={company.introImageUrl} alt={pick(company, "name", locale)} fill sizes="(min-width: 1024px) 40vw, 100vw" className="object-cover" />
+                </div>
+              ) : (
+                <div aria-hidden className="relative hidden aspect-[5/4] overflow-hidden rounded-2xl bg-beige lg:block">
+                  <Image src="/brand/logo-navy.png" alt="" fill sizes="40vw" className="object-contain p-24 opacity-90" />
+                </div>
+              )}
             </div>
           </section>
         );

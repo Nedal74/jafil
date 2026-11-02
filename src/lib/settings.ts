@@ -20,6 +20,8 @@ export const settingSchemas = {
     nameAr: shortStr,
     nameEn: shortStr,
     introAr: str,
+    introImageUrl: url,
+    aboutImageUrl: url,
     introEn: str,
     aboutAr: str,
     aboutEn: str,
