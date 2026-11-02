@@ -6,6 +6,8 @@ import { notFound } from "next/navigation";
 import { AssistantWidget } from "@/components/site/AssistantWidget";
 import { Analytics } from "@/components/site/Analytics";
 import { ConsentBanner } from "@/components/site/ConsentBanner";
+import { FloatingWhatsApp } from "@/components/site/FloatingWhatsApp";
+import { whatsappLink } from "@/lib/phone";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
 import { siteUrl } from "@/lib/env";
@@ -63,6 +65,12 @@ export default async function LocaleLayout({ children, params }: { children: Rea
             welcome={pick(assistant, "welcome", locale)}
             types={types.map((ty) => ({ key: ty.key, label: pick(ty, "name", locale) }))}
             privacyHref={`/${locale}/privacy`}
+          />
+        )}
+        {contact.floatingWhatsapp && contact.whatsapp && whatsappLink(contact.whatsapp) && (
+          <FloatingWhatsApp
+            href={whatsappLink(contact.whatsapp, locale === "ar" ? "مرحباً، أرغب بالاستفسار عن مشاريع مساكن الجافل" : "Hello, I'd like to ask about Masaken Aljafil projects")!}
+            label={locale === "ar" ? "تواصل معنا عبر واتساب" : "Chat with us on WhatsApp"}
           />
         )}
         {(google.ga4MeasurementId || google.gtmContainerId) && (

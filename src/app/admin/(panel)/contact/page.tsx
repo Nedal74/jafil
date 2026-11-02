@@ -1,4 +1,4 @@
-import { ActionForm, SubmitButton, TextArea, TextField } from "@/components/admin/forms";
+import { ActionForm, Checkbox, SubmitButton, TextArea, TextField } from "@/components/admin/forms";
 import { PageHeader, Panel } from "@/components/admin/ui";
 import { requireUser } from "@/lib/auth/session";
 import { getSetting } from "@/lib/settings";
@@ -16,7 +16,8 @@ export default async function ContactSettings() {
         <ActionForm action={saveSettingAction} className="grid gap-4 md:grid-cols-2">
           <input type="hidden" name="__key" value="contact" />
           <TextField name="email" label="البريد الإلكتروني" defaultValue={c.email} dir="ltr" type="email" />
-          <TextField name="whatsapp" label="رقم واتساب" defaultValue={c.whatsapp} dir="ltr" />
+          <TextField name="whatsapp" label="رقم واتساب" defaultValue={c.whatsapp} dir="ltr" hint="يُستخدم في زر واتساب العائم وأزرار التواصل" />
+          <div className="flex items-end pb-2 md:col-span-2"><Checkbox name="floatingWhatsapp" label="إظهار زر واتساب العائم في كل صفحات الموقع" defaultChecked={c.floatingWhatsapp} /></div>
           <TextArea name="phones" label="أرقام الهاتف (رقم في كل سطر)" defaultValue={c.phones.join("\n")} rows={3} dir="ltr" />
           <TextField name="mapUrl" label="رابط الخريطة" defaultValue={c.mapUrl} dir="ltr" />
           <TextField name="addressAr" label="العنوان (عربي)" defaultValue={c.addressAr} />

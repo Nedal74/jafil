@@ -46,6 +46,7 @@ export const settingSchemas = {
     email: z.union([z.literal(""), z.email()]).default(""),
     phones: z.array(z.string().trim().max(30)).max(6).default([]),
     whatsapp: shortStr,
+    floatingWhatsapp: z.boolean().default(true),
     addressAr: shortStr,
     addressEn: shortStr,
     mapUrl: url,

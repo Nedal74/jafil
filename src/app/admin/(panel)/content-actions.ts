@@ -124,6 +124,7 @@ const BOOL_FIELDS: Partial<Record<SettingKey, string[]>> = {
   seo: ["indexingEnabled"],
   assistant: ["enabled", "useLanguageModel"],
   inventory: ["countReservedAsSold"],
+  contact: ["floatingWhatsapp"],
 };
 
 /** Converts flat form fields into the setting's shape (lists, nested socials, booleans). */
